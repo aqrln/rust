@@ -1474,6 +1474,13 @@ impl<'a, 'tcx> TypeErrCtxt<'a, 'tcx> {
         // subset of error's param-env. This only matters when binders will carry
         // predicates though, and obviously only matters for error reporting.
         if cond.param_env != error.param_env {
+            // let cond_bounds = cond.param_env.caller_bounds();
+            // let error_bounds = error.param_env.caller_bounds();
+            // for b in cond_bounds {
+            //     if !error_bounds.iter().any(|eb| eb == b) {
+            //         return false;
+            //     }
+            // }
             return false;
         }
         let param_env = error.param_env;

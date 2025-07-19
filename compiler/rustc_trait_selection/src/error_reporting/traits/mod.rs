@@ -156,6 +156,10 @@ impl<'a, 'tcx> TypeErrCtxt<'a, 'tcx> {
             })
             .collect();
 
+        dbg!(&errors);
+        dbg!(errors.len());
+        // self.report_fulfillment_error(&errors[1]);
+
         // Ensure `T: Sized`, `T: MetaSized`, `T: PointeeSized` and `T: WF` obligations come last,
         // and `Subtype` obligations from `FormatLiteral` desugarings come first.
         // This lets us display diagnostics with more relevant type information and hide redundant
@@ -171,6 +175,7 @@ impl<'a, 'tcx> TypeErrCtxt<'a, 'tcx> {
             WellFormed,
         }
         errors.sort_by_key(|e| {
+            dbg!(&e);
             let maybe_sizedness_did = match e.obligation.predicate.kind().skip_binder() {
                 ty::PredicateKind::Clause(ty::ClauseKind::Trait(pred)) => Some(pred.def_id()),
                 ty::PredicateKind::Clause(ty::ClauseKind::HostEffect(pred)) => Some(pred.def_id()),
@@ -223,7 +228,9 @@ impl<'a, 'tcx> TypeErrCtxt<'a, 'tcx> {
         // We do this in 2 passes because we want to display errors in order, though
         // maybe it *is* better to sort errors by span or something.
         let mut is_suppressed = vec![false; errors.len()];
-        for (_, error_set) in error_map.iter() {
+        for (span, error_set) in error_map.iter() {
+            let sm = self.tcx.sess.source_map();
+            println!("errors for span {}", sm.span_to_embeddable_string(span.clone()));
             // We want to suppress "duplicate" errors with the same span.
             for error in error_set {
                 if let Some(index) = error.index {
@@ -256,6 +263,7 @@ impl<'a, 'tcx> TypeErrCtxt<'a, 'tcx> {
             for (error, suppressed) in iter::zip(&errors, &is_suppressed) {
                 if !suppressed && error.obligation.cause.span.from_expansion() == from_expansion {
                     if !error.references_error() {
+                        println!("reporting error");
                         let guar = self.report_fulfillment_error(error);
                         self.infcx.set_tainted_by_errors(guar);
                         reported = Some(guar);
